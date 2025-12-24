@@ -32,7 +32,8 @@ class AutoPromoChecker:
                 for promo in promos:
                     send_notification(
                         f"Promo trouvée : {promo['site']}",
-                        f"{promo['keyword']} - {promo['url']}"
+                        f"{promo['keyword']} - {promo['url']}",
+                        url=promo['url']
                     )
                     save_promo_to_history(promo)
             time.sleep(self.interval)
