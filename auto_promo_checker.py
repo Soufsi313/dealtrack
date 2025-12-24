@@ -25,6 +25,7 @@ class AutoPromoChecker:
             self.thread.join()
 
     def run(self):
+        from promotions.promo_history import save_promo_to_history
         while self.running:
             promos = promo_detector.check_promos(return_results=True)
             if promos:
@@ -33,6 +34,7 @@ class AutoPromoChecker:
                         f"Promo trouvée : {promo['site']}",
                         f"{promo['keyword']} - {promo['url']}"
                     )
+                    save_promo_to_history(promo)
             time.sleep(self.interval)
 
 if __name__ == "__main__":
