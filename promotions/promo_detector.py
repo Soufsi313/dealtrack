@@ -30,15 +30,28 @@ def load_wishlist():
         return json.load(f)
 
 def check_promos():
+    return_results = False
+    import inspect
+    # Permet d'appeler check_promos(return_results=True)
+    frame = inspect.currentframe().f_back
+    if frame and 'return_results' in frame.f_locals:
+        return_results = frame.f_locals['return_results']
     wishlist = load_wishlist()
+    results = []
     for keyword in wishlist:
         for site in SITES:
             url = site["url"].format(query=keyword.replace(' ', '+'))
-            print(f"Recherche de promotions pour '{keyword}' sur {site['name']}...")
-            # Pour Amazon et Instant Gaming, on pourrait scraper les résultats, ici on ouvre simplement le site
-            webbrowser.open(url)
-            # Pour un vrai scraping, il faudrait analyser le HTML et détecter les promos
-            # (non implémenté ici pour simplicité et respect des conditions d'utilisation)
+            if return_results:
+                results.append({
+                    "keyword": keyword,
+                    "site": site["name"],
+                    "url": url
+                })
+            else:
+                print(f"Recherche de promotions pour '{keyword}' sur {site['name']}...")
+                webbrowser.open(url)
+    if return_results:
+        return results
 
 def main():
     check_promos()
