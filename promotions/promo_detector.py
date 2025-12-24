@@ -29,13 +29,7 @@ def load_wishlist():
     with open(WISHLIST_FILE, 'r', encoding='utf-8') as f:
         return json.load(f)
 
-def check_promos():
-    return_results = False
-    import inspect
-    # Permet d'appeler check_promos(return_results=True)
-    frame = inspect.currentframe().f_back
-    if frame and 'return_results' in frame.f_locals:
-        return_results = frame.f_locals['return_results']
+def check_promos(return_results=False):
     wishlist = load_wishlist()
     results = []
     for keyword in wishlist:
