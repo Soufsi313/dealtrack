@@ -3,7 +3,7 @@ import os
 import json
 from datetime import datetime
 
-HISTORY_FILE = os.path.join(os.path.dirname(__file__), 'promotions', 'promo_history.json')
+HISTORY_FILE = os.path.join(os.path.dirname(__file__), 'promo_history.json')
 
 def save_promo_to_history(promo):
     if os.path.exists(HISTORY_FILE):
