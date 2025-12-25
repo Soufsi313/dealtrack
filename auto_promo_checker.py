@@ -1,11 +1,21 @@
 # auto_promo_checker.py
 
+
 import time
 import threading
 import promotions.promo_detector as promo_detector
 from notifications.notification_manager import send_notification
+import os
+import json
 
-CHECK_INTERVAL = 60 * 60  # 1 heure (en secondes)
+CONFIG_FILE = os.path.join(os.path.dirname(__file__), 'auto_promo_config.json')
+
+def get_check_interval():
+    if os.path.exists(CONFIG_FILE):
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+        return int(config.get('check_interval_minutes', 60)) * 60
+    return 60 * 60
 
 class AutoPromoChecker:
     def __init__(self, interval=CHECK_INTERVAL):
@@ -39,8 +49,10 @@ class AutoPromoChecker:
             time.sleep(self.interval)
 
 if __name__ == "__main__":
-    checker = AutoPromoChecker(interval=60)  # Pour test, vérifie toutes les minutes
+    interval = get_check_interval()
+    checker = AutoPromoChecker(interval=interval)
     checker.start()
+    print(f"Vérification automatique toutes les {interval//60} minutes. Appuyez sur Ctrl+C pour arrêter.")
     try:
         while True:
             time.sleep(1)
