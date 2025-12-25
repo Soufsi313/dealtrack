@@ -18,7 +18,7 @@ def get_check_interval():
     return 60 * 60
 
 class AutoPromoChecker:
-    def __init__(self, interval=CHECK_INTERVAL):
+    def __init__(self, interval):
         self.interval = interval
         self.running = False
         self.thread = None
