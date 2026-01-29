@@ -22,6 +22,13 @@ class DealTrackApp(tk.Tk):
         self.label = tk.Label(self, text="Liste de souhaits", font=("Arial", 14))
         self.label.pack(pady=10)
 
+        self.search_var = tk.StringVar()
+        self.search_var.trace("w", self.update_filter)
+        self.search_entry = tk.Entry(self, textvariable=self.search_var, width=30)
+        self.search_entry.pack(pady=5)
+        self.search_entry.insert(0, "Rechercher...")
+        self.search_entry.bind("<FocusIn>", lambda e: self.search_entry.delete(0, END) if self.search_entry.get() == "Rechercher..." else None)
+
         self.listbox = Listbox(self, width=40, height=10)
         self.listbox.pack(pady=10)
 
@@ -34,13 +41,18 @@ class DealTrackApp(tk.Tk):
         self.promo_btn = tk.Button(self, text="Rechercher des promotions", command=self.search_promos)
         self.promo_btn.pack(pady=20)
 
-    def load_wishlist(self):
+    def update_filter(self, *args):
+        search = self.search_var.get().lower()
         self.listbox.delete(0, END)
         if os.path.exists(WISHLIST_FILE):
             with open(WISHLIST_FILE, 'r', encoding='utf-8') as f:
                 wishlist = json.load(f)
             for kw in wishlist:
-                self.listbox.insert(END, kw)
+                if search in kw.lower():
+                    self.listbox.insert(END, kw)
+
+    def load_wishlist(self):
+        self.update_filter()
 
     def add_keyword(self):
         keyword = simpledialog.askstring("Ajouter", "Entrez le mot-clé à ajouter :")
