@@ -16,8 +16,9 @@ class DealTrackApp(tk.Tk):
         self.geometry("400x400")
         self.resizable(False, False)
         self.migrate_wishlist()
+        self.listbox = None  # Défini plus tard
         self.create_widgets()
-        self.load_wishlist()
+        self.after(0, self.load_wishlist)
 
     def migrate_wishlist(self):
         # Migration automatique de la structure wishlist (str -> dict)
@@ -35,7 +36,6 @@ class DealTrackApp(tk.Tk):
         self.label.pack(pady=10)
 
         self.search_var = tk.StringVar()
-        self.search_var.trace("w", self.update_filter)
         self.search_entry = tk.Entry(self, textvariable=self.search_var, width=30)
         self.search_entry.pack(pady=5)
         self.search_entry.insert(0, "Rechercher...")
@@ -53,7 +53,12 @@ class DealTrackApp(tk.Tk):
         self.promo_btn = tk.Button(self, text="Rechercher des promotions", command=self.search_promos)
         self.promo_btn.pack(pady=20)
 
+        # Connecte la recherche après la création de la listbox
+        self.search_var.trace("w", self.update_filter)
+
     def update_filter(self, *args):
+        if not self.listbox:
+            return
         search = self.search_var.get().lower()
         self.listbox.delete(0, END)
         if os.path.exists(WISHLIST_FILE):
@@ -120,9 +125,30 @@ class DealTrackApp(tk.Tk):
             messagebox.showinfo("Info", "Sélectionnez un mot-clé à supprimer.")
 
     def search_promos(self):
-        # Lance le script promo_detector.py
+        selected = self.listbox.curselection()
+        if selected:
+            idx = selected[0]
+            display = self.listbox.get(idx)
+            keyword = display.split(' [')[0]
+            # Charger la wishlist pour retrouver la catégorie exacte
+            if os.path.exists(WISHLIST_FILE):
+                with open(WISHLIST_FILE, 'r', encoding='utf-8') as f:
+                    wishlist = json.load(f)
+                for item in wishlist:
+                    if item["keyword"] == keyword:
+                        # Appel direct à promo_detector pour ce mot-clé
+                        import importlib.util
+                        import sys
+                        spec = importlib.util.spec_from_file_location("promo_detector", PROMO_DETECTOR)
+                        promo_detector = importlib.util.module_from_spec(spec)
+                        sys.modules["promo_detector"] = promo_detector
+                        spec.loader.exec_module(promo_detector)
+                        promo_detector.check_promos_for_keyword(item)
+                        messagebox.showinfo("Recherche", f"Recherche de promotions lancée pour : {keyword}")
+                        return
+        # Sinon, comportement par défaut (tous les mots-clés)
         subprocess.Popen([os.sys.executable, PROMO_DETECTOR])
-        messagebox.showinfo("Recherche", "Recherche de promotions lancée !")
+        messagebox.showinfo("Recherche", "Recherche de promotions lancée pour toute la liste !")
 
 if __name__ == "__main__":
     app = DealTrackApp()

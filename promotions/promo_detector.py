@@ -1,3 +1,13 @@
+def check_promos_for_keyword(item):
+    # item : dict {"keyword":..., "category":...}
+    from .promo_history import save_promo_to_history if __package__ else (lambda x: None)
+    active_sites = get_active_sites()
+    kw = item["keyword"]
+    for site in active_sites:
+        url = site["url"].format(query=kw.replace(' ', '+'))
+        print(f"Recherche de promotions pour '{kw}' sur {site['name']}...")
+        import webbrowser
+        webbrowser.open(url)
 # promo_detector.py
 
 import webbrowser
