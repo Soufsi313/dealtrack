@@ -19,6 +19,7 @@ class DealTrackApp(tk.Tk):
         self.load_wishlist()
 
     def create_widgets(self):
+        self.categories = ["Jeu", "Console", "Matériel"]
         self.label = tk.Label(self, text="Liste de souhaits", font=("Arial", 14))
         self.label.pack(pady=10)
 
@@ -29,7 +30,7 @@ class DealTrackApp(tk.Tk):
         self.search_entry.insert(0, "Rechercher...")
         self.search_entry.bind("<FocusIn>", lambda e: self.search_entry.delete(0, END) if self.search_entry.get() == "Rechercher..." else None)
 
-        self.listbox = Listbox(self, width=40, height=10)
+        self.listbox = Listbox(self, width=50, height=10)
         self.listbox.pack(pady=10)
 
         self.add_btn = tk.Button(self, text="Ajouter un mot-clé", command=self.add_keyword)
@@ -47,37 +48,60 @@ class DealTrackApp(tk.Tk):
         if os.path.exists(WISHLIST_FILE):
             with open(WISHLIST_FILE, 'r', encoding='utf-8') as f:
                 wishlist = json.load(f)
-            for kw in wishlist:
-                if search in kw.lower():
-                    self.listbox.insert(END, kw)
+            # Migration auto si ancienne structure
+            if wishlist and isinstance(wishlist[0], str):
+                wishlist = [{"keyword": k, "category": "Jeu"} for k in wishlist]
+                with open(WISHLIST_FILE, 'w', encoding='utf-8') as f2:
+                    json.dump(wishlist, f2, ensure_ascii=False, indent=2)
+            for item in wishlist:
+                if search in item["keyword"].lower():
+                    self.listbox.insert(END, f"{item['keyword']} [{item['category']}]" )
 
     def load_wishlist(self):
         self.update_filter()
 
     def add_keyword(self):
         keyword = simpledialog.askstring("Ajouter", "Entrez le mot-clé à ajouter :")
-        if keyword:
+        if not keyword:
+            return
+        cat_win = tk.Toplevel(self)
+        cat_win.title("Choisir une catégorie")
+        tk.Label(cat_win, text="Catégorie :").pack(pady=5)
+        cat_var = tk.StringVar(value=self.categories[0])
+        for cat in self.categories:
+            tk.Radiobutton(cat_win, text=cat, variable=cat_var, value=cat).pack(anchor="w")
+        def on_ok():
+            category = cat_var.get()
+            cat_win.destroy()
             if os.path.exists(WISHLIST_FILE):
                 with open(WISHLIST_FILE, 'r', encoding='utf-8') as f:
                     wishlist = json.load(f)
             else:
                 wishlist = []
-            if keyword not in wishlist:
-                wishlist.append(keyword)
-                with open(WISHLIST_FILE, 'w', encoding='utf-8') as f:
-                    json.dump(wishlist, f, ensure_ascii=False, indent=2)
-                self.load_wishlist()
-            else:
+            # Migration auto si ancienne structure
+            if wishlist and isinstance(wishlist[0], str):
+                wishlist = [{"keyword": k, "category": "Jeu"} for k in wishlist]
+            if any(item["keyword"].lower() == keyword.lower() for item in wishlist):
                 messagebox.showinfo("Info", "Mot-clé déjà présent.")
+                return
+            wishlist.append({"keyword": keyword, "category": category})
+            with open(WISHLIST_FILE, 'w', encoding='utf-8') as f:
+                json.dump(wishlist, f, ensure_ascii=False, indent=2)
+            self.load_wishlist()
+        tk.Button(cat_win, text="OK", command=on_ok).pack(pady=10)
 
     def remove_keyword(self):
         selected = self.listbox.curselection()
         if selected:
             idx = selected[0]
-            keyword = self.listbox.get(idx)
+            display = self.listbox.get(idx)
+            keyword = display.split(' [')[0]
             with open(WISHLIST_FILE, 'r', encoding='utf-8') as f:
                 wishlist = json.load(f)
-            wishlist.remove(keyword)
+            # Migration auto si ancienne structure
+            if wishlist and isinstance(wishlist[0], str):
+                wishlist = [{"keyword": k, "category": "Jeu"} for k in wishlist]
+            wishlist = [item for item in wishlist if item["keyword"] != keyword]
             with open(WISHLIST_FILE, 'w', encoding='utf-8') as f:
                 json.dump(wishlist, f, ensure_ascii=False, indent=2)
             self.load_wishlist()
