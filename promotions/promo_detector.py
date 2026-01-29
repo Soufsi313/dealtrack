@@ -1,13 +1,24 @@
+
 def check_promos_for_keyword(item):
     # item : dict {"keyword":..., "category":...}
-    from .promo_history import save_promo_to_history if __package__ else (lambda x: None)
     active_sites = get_active_sites()
     kw = item["keyword"]
+    cat = item.get("category", "Jeu")
     for site in active_sites:
+        # Si le site ne supporte pas la catégorie, on saute
+        if "categories" in site and cat not in site["categories"]:
+            continue
         url = site["url"].format(query=kw.replace(' ', '+'))
         print(f"Recherche de promotions pour '{kw}' sur {site['name']}...")
         import webbrowser
         webbrowser.open(url)
+# promo_detector.py
+
+import webbrowser
+import requests
+from bs4 import BeautifulSoup
+import os
+import json
 # promo_detector.py
 
 import webbrowser
@@ -22,15 +33,18 @@ WISHLIST_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'wishli
 SITES = [
     {
         "name": "Amazon.fr",
-        "url": "https://www.amazon.fr/s?k={query}"
+        "url": "https://www.amazon.fr/s?k={query}",
+        "categories": ["Jeu", "Console", "Matériel"]
     },
     {
         "name": "Instant Gaming",
-        "url": "https://www.instant-gaming.com/fr/rechercher/?q={query}"
+        "url": "https://www.instant-gaming.com/fr/rechercher/?q={query}",
+        "categories": ["Jeu"]
     },
     {
         "name": "Google",
-        "url": "https://www.google.com/search?q={query}+promo"
+        "url": "https://www.google.com/search?q={query}+promo",
+        "categories": ["Jeu", "Console", "Matériel"]
     }
 ]
 
