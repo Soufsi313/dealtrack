@@ -15,8 +15,19 @@ class DealTrackApp(tk.Tk):
         self.title("DealTrack")
         self.geometry("400x400")
         self.resizable(False, False)
+        self.migrate_wishlist()
         self.create_widgets()
         self.load_wishlist()
+
+    def migrate_wishlist(self):
+        # Migration automatique de la structure wishlist (str -> dict)
+        if os.path.exists(WISHLIST_FILE):
+            with open(WISHLIST_FILE, 'r', encoding='utf-8') as f:
+                wishlist = json.load(f)
+            if wishlist and isinstance(wishlist[0], str):
+                wishlist = [{"keyword": k, "category": "Jeu"} for k in wishlist]
+                with open(WISHLIST_FILE, 'w', encoding='utf-8') as f2:
+                    json.dump(wishlist, f2, ensure_ascii=False, indent=2)
 
     def create_widgets(self):
         self.categories = ["Jeu", "Console", "Matériel"]

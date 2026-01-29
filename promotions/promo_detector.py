@@ -43,17 +43,22 @@ def check_promos(return_results=False):
     wishlist = load_wishlist()
     results = []
     active_sites = get_active_sites()
-    for keyword in wishlist:
+    for item in wishlist:
+        # Supporte ancienne structure (str) et nouvelle (dict)
+        if isinstance(item, str):
+            kw = item
+        else:
+            kw = item.get("keyword", "")
         for site in active_sites:
-            url = site["url"].format(query=keyword.replace(' ', '+'))
+            url = site["url"].format(query=kw.replace(' ', '+'))
             if return_results:
                 results.append({
-                    "keyword": keyword,
+                    "keyword": kw,
                     "site": site["name"],
                     "url": url
                 })
             else:
-                print(f"Recherche de promotions pour '{keyword}' sur {site['name']}...")
+                print(f"Recherche de promotions pour '{kw}' sur {site['name']}...")
                 webbrowser.open(url)
     if return_results:
         return results
