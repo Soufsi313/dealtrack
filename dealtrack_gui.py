@@ -16,7 +16,7 @@ class DealTrackApp(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("DealTrack")
-        self.geometry("400x450")
+        self.geometry("400x550")
         self.resizable(False, False)
         self.migrate_wishlist()
         self.listbox = None  # Défini plus tard
@@ -40,9 +40,161 @@ class DealTrackApp(tk.Tk):
                     json.dump(wishlist, f2, ensure_ascii=False, indent=2)
 
     def create_widgets(self):
-        self.categories = ["Jeu", "Console", "Matériel"]
+        # Chargement dynamique des catégories
+        self.load_categories()
         self.label = tk.Label(self, text="Liste de souhaits", font=("Arial", 14))
         self.label.pack(pady=10)
+
+        # Menu déroulant utilisateur
+        user_frame = tk.Frame(self)
+        user_frame.pack(pady=5)
+        tk.Label(user_frame, text="Utilisateur :").pack(side="left")
+        self.user_var = tk.StringVar(value=self.current_user)
+        self.user_menu = ttk.Combobox(user_frame, textvariable=self.user_var, state="readonly")
+        self.refresh_user_list()
+        self.user_menu.pack(side="left", padx=5)
+        self.user_menu.bind("<<ComboboxSelected>>", self.on_user_change)
+        self.add_user_btn = tk.Button(user_frame, text="+", command=self.add_user, width=2)
+        self.add_user_btn.pack(side="left")
+
+        self.search_var = tk.StringVar()
+        self.search_entry = tk.Entry(self, textvariable=self.search_var, width=30)
+        self.search_entry.pack(pady=5)
+        self.search_entry.insert(0, "Rechercher...")
+        self.search_entry.bind("<FocusIn>", lambda e: self.search_entry.delete(0, END) if self.search_entry.get() == "Rechercher..." else None)
+
+        self.listbox = Listbox(self, width=50, height=10)
+        self.listbox.pack(pady=10)
+
+        self.add_btn = tk.Button(self, text="Ajouter un mot-clé", command=self.add_keyword)
+        self.add_btn.pack(pady=5)
+
+        self.remove_btn = tk.Button(self, text="Supprimer le mot-clé sélectionné", command=self.remove_keyword)
+        self.remove_btn.pack(pady=5)
+
+        self.promo_btn = tk.Button(self, text="Rechercher des promotions", command=self.search_promos)
+        self.promo_btn.pack(pady=10)
+
+        self.notif_history_btn = tk.Button(self, text="Historique des notifications", command=self.show_notif_history)
+        self.notif_history_btn.pack(pady=5)
+
+        # Boutons supplémentaires
+        self.filters_btn = tk.Button(self, text="Filtres avancés", command=self.show_filters)
+        self.filters_btn.pack(pady=5)
+
+        self.favorites_btn = tk.Button(self, text="Favoris", command=self.show_favorites)
+        self.favorites_btn.pack(pady=5)
+
+        # Bouton gestion des catégories placé après la wishlist et les actions
+        self.cat_manage_btn = tk.Button(self, text="Gérer les catégories", command=self.manage_categories)
+        self.cat_manage_btn.pack(pady=15)
+    def show_filters(self):
+        win = tk.Toplevel(self)
+        win.title("Filtres avancés")
+        win.geometry("350x220")
+        # Chargement config
+        filters_path = os.path.join(os.path.dirname(__file__), 'promotions', 'filters_config.json')
+        if os.path.exists(filters_path):
+            with open(filters_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+        else:
+            config = {"max_price": None, "exclude_keywords": []}
+        # Prix max
+        tk.Label(win, text="Prix maximum (€) :").pack()
+        price_var = tk.StringVar(value=str(config.get("max_price") or ""))
+        price_entry = tk.Entry(win, textvariable=price_var)
+        price_entry.pack()
+        # Exclusions
+        tk.Label(win, text="Mots à exclure (séparés par des virgules) :").pack()
+        excl_var = tk.StringVar(value=", ".join(config.get("exclude_keywords", [])))
+        excl_entry = tk.Entry(win, textvariable=excl_var, width=40)
+        excl_entry.pack()
+        def save_filters():
+            try:
+                max_price = float(price_var.get()) if price_var.get().strip() else None
+            except ValueError:
+                messagebox.showerror("Erreur", "Le prix maximum doit être un nombre.")
+                return
+            excl = [w.strip() for w in excl_var.get().split(",") if w.strip()]
+            config = {"max_price": max_price, "exclude_keywords": excl}
+            with open(filters_path, 'w', encoding='utf-8') as f:
+                json.dump(config, f, ensure_ascii=False, indent=2)
+            messagebox.showinfo("Succès", "Filtres enregistrés !")
+            win.destroy()
+        tk.Button(win, text="Enregistrer", command=save_filters).pack(pady=10)
+
+    def show_favorites(self):
+        win = tk.Toplevel(self)
+        win.title("Favoris")
+        win.geometry("500x300")
+        fav_path = os.path.join(os.path.dirname(__file__), 'promotions', 'favorites.json')
+        if os.path.exists(fav_path):
+            with open(fav_path, 'r', encoding='utf-8') as f:
+                favs = json.load(f)
+        else:
+            favs = {}
+        user_favs = favs.get(self.current_user, [])
+        listbox = Listbox(win, width=70, height=15)
+        listbox.pack(padx=10, pady=10)
+        if user_favs:
+            for fav in reversed(user_favs):
+                line = f"{fav.get('timestamp','')} | {fav.get('site','')} | {fav.get('keyword','')} | {fav.get('url','')}"
+                listbox.insert(END, line)
+        else:
+            listbox.insert(END, "Aucun favori enregistré pour cet utilisateur.")
+
+    def load_categories(self):
+        cat_path = os.path.join(os.path.dirname(__file__), 'wishlist', 'categories_manager.py')
+        import importlib.util
+        import sys
+        spec = importlib.util.spec_from_file_location("categories_manager", cat_path)
+        categories_manager = importlib.util.module_from_spec(spec)
+        sys.modules["categories_manager"] = categories_manager
+        spec.loader.exec_module(categories_manager)
+        self.categories = categories_manager.load_categories()
+
+    def manage_categories(self):
+        win = tk.Toplevel(self)
+        win.title("Gestion des catégories")
+        win.geometry("350x300")
+        listbox = Listbox(win, width=30, height=10)
+        listbox.pack(pady=10)
+        for cat in self.categories:
+            listbox.insert(END, cat)
+
+        def add_cat():
+            new_cat = simpledialog.askstring("Ajouter une catégorie", "Nom de la nouvelle catégorie :", parent=win)
+            if new_cat and new_cat not in self.categories:
+                self.categories.append(new_cat)
+                listbox.insert(END, new_cat)
+                self.save_categories_and_refresh()
+
+        def remove_cat():
+            sel = listbox.curselection()
+            if sel:
+                idx = sel[0]
+                cat = listbox.get(idx)
+                if cat in self.categories:
+                    self.categories.remove(cat)
+                    listbox.delete(idx)
+                    self.save_categories_and_refresh()
+
+        add_btn = tk.Button(win, text="Ajouter", command=add_cat)
+        add_btn.pack(side="left", padx=10, pady=5)
+        del_btn = tk.Button(win, text="Supprimer", command=remove_cat)
+        del_btn.pack(side="right", padx=10, pady=5)
+
+    def save_categories_and_refresh(self):
+        cat_path = os.path.join(os.path.dirname(__file__), 'wishlist', 'categories_manager.py')
+        import importlib.util
+        import sys
+        spec = importlib.util.spec_from_file_location("categories_manager", cat_path)
+        categories_manager = importlib.util.module_from_spec(spec)
+        sys.modules["categories_manager"] = categories_manager
+        spec.loader.exec_module(categories_manager)
+        categories_manager.save_categories(self.categories)
+        # Recharge les catégories pour la prochaine utilisation
+        self.load_categories()
 
         # Menu déroulant utilisateur
         user_frame = tk.Frame(self)
@@ -146,10 +298,11 @@ class DealTrackApp(tk.Tk):
         keyword = simpledialog.askstring("Ajouter", "Entrez le mot-clé à ajouter :")
         if not keyword:
             return
+        self.load_categories()  # Recharge les catégories à jour
         cat_win = tk.Toplevel(self)
         cat_win.title("Choisir une catégorie")
         tk.Label(cat_win, text="Catégorie :").pack(pady=5)
-        cat_var = tk.StringVar(value=self.categories[0])
+        cat_var = tk.StringVar(value=self.categories[0] if self.categories else "")
         for cat in self.categories:
             tk.Radiobutton(cat_win, text=cat, variable=cat_var, value=cat).pack(anchor="w")
         def on_ok():
