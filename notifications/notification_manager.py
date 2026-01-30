@@ -1,11 +1,35 @@
+
 # notification_manager.py
 
-
+import os
 import platform
 import sys
 import webbrowser
+import json
+from datetime import datetime
 
-def send_notification(title, message, url=None):
+NOTIF_HISTORY_FILE = os.path.join(os.path.dirname(__file__), 'notifications_history.json')
+
+def save_notification_history(username, title, message, url=None):
+    if os.path.exists(NOTIF_HISTORY_FILE):
+        with open(NOTIF_HISTORY_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+    else:
+        data = {}
+    notif = {
+        "title": title,
+        "message": message,
+        "url": url,
+        "timestamp": datetime.now().isoformat(sep=' ', timespec='seconds')
+    }
+    if username not in data:
+        data[username] = []
+    data[username].append(notif)
+    with open(NOTIF_HISTORY_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+def send_notification(title, message, url=None, username="default"):
+    save_notification_history(username, title, message, url)
     if platform.system() == "Windows" and url is not None:
         try:
             from win10toast_click import ToastNotifier
@@ -39,5 +63,6 @@ if __name__ == "__main__":
     parser.add_argument("title", help="Titre de la notification")
     parser.add_argument("message", help="Message de la notification")
     parser.add_argument("--url", help="URL à ouvrir au clic sur la notification", default=None)
+    parser.add_argument("--user", help="Nom d'utilisateur (pour l'historique)", default="default")
     args = parser.parse_args()
-    send_notification(args.title, args.message, args.url)
+    send_notification(args.title, args.message, args.url, args.user)

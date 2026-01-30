@@ -1,22 +1,54 @@
-[
-  {
-    "keyword": "Guild Wars",
-    "category": "Jeu"
-  },
-  {
-    "keyword": "The last of us Part II",
-    "category": "Jeu"
-  },
-  {
-    "keyword": "Resident evil 2 remake",
-    "category": "Jeu"
-  },
-  {
-    "keyword": "Playstation 5",
-    "category": "Console"
-  },
-  {
-    "keyword": "RTX ",
-    "category": "Matériel"
-  }
-]
+{
+  "default": [
+    {
+      "keyword": "Guild Wars",
+      "category": "Jeu"
+    },
+    {
+      "keyword": "The last of us Part II",
+      "category": "Jeu"
+    },
+    {
+      "keyword": "Resident evil 2 remake",
+      "category": "Jeu"
+    },
+    {
+      "keyword": "Playstation 5",
+      "category": "Console"
+    },
+    {
+      "keyword": "RTX ",
+      "category": "Matériel"
+    }
+  ],
+  "Saurouk": [
+    {
+      "keyword": "Resident evil",
+      "category": "Jeu"
+    },
+    {
+      "keyword": "The last of us",
+      "category": "Jeu"
+    },
+    {
+      "keyword": "Playstation 5",
+      "category": "Console"
+    },
+    {
+      "keyword": "Xbox serie X",
+      "category": "Console"
+    },
+    {
+      "keyword": "RAM DDR5",
+      "category": "Matériel"
+    },
+    {
+      "keyword": "Carte Graphique RTX",
+      "category": "Matériel"
+    },
+    {
+      "keyword": "World of Warcraft",
+      "category": "Jeu"
+    }
+  ]
+}

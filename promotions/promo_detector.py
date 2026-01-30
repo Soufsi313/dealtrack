@@ -1,18 +1,4 @@
 
-def check_promos_for_keyword(item):
-    # item : dict {"keyword":..., "category":...}
-    active_sites = get_active_sites()
-    kw = item["keyword"]
-    cat = item.get("category", "Jeu")
-    for site in active_sites:
-        # Si le site ne supporte pas la catégorie, on saute
-        if "categories" in site and cat not in site["categories"]:
-            continue
-        url = site["url"].format(query=kw.replace(' ', '+'))
-        print(f"Recherche de promotions pour '{kw}' sur {site['name']}...")
-        import webbrowser
-        webbrowser.open(url)
-# promo_detector.py
 
 import webbrowser
 import requests
@@ -92,3 +78,17 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+# Fonction pour recherche ciblée (utilisée par la GUI)
+def check_promos_for_keyword(item):
+    # item : dict {"keyword":..., "category":...}
+    active_sites = get_active_sites()
+    kw = item["keyword"]
+    cat = item.get("category", "Jeu")
+    for site in active_sites:
+        # Si le site ne supporte pas la catégorie, on saute
+        if "categories" in site and cat not in site["categories"]:
+            continue
+        url = site["url"].format(query=kw.replace(' ', '+'))
+        print(f"Recherche de promotions pour '{kw}' sur {site['name']}...")
+        webbrowser.open(url)
